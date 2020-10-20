@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 日志级别以及优先级排序：OFF > FATAL > ERROR > WARN > INFO >DEBUG > TRACE > ALL -->
+<!-- status log4j2内部日志级别 monitorInterval 多久检查配置文件是否有变化，有变化动态加载(以秒为单位)-->
+<configuration status="WARN" monitorInterval="600">
+    <!-- 全局参数 -->
+    <Properties>
+        <Property name="pattern">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%t] %logger{39}#%M : %m%n</Property>
+        <Property name="displayName">template</Property>
+        <Property name="logPath">logs</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="console" target="SYSTEM_OUT" follow="true">
+            <PatternLayout>
+                <pattern>${pattern}</pattern>
+            </PatternLayout>
+        </Console>
+
+        <MyRollingFile name="infoFile" fileName="${logPath}/${displayName}_info.log"
+                       filePattern="${logPath}/${date:yyyy-MM}/${displayName}-info-%d{yyyy-MM-dd}-%i.log.gz"
+                       bufferedIO="true" bufferSize="8192" immediateFlush="false">
+            <PatternLayout pattern="${pattern}"/>
+            <Filters>
+                <ThresholdFilter level="INFO"/>
+                <!-- 过滤条件有三个值：ACCEPT(接受)，DENY(拒绝)，NEUTRAL(中立) -->
+                <!-- 设置 onMismatch="NEUTRAL" 可以让日志经过后续的过滤器 -->
+                <ThresholdFilter level="WARN" onMatch="DENY" onMismatch="NEUTRAL"/>
+            </Filters>
+            <Policies>
+                <!-- 归档每天的文件 -->
+                <!--
+                    这个配置需要和 filePattern 结合使用，注意 filePattern 中配置的文件重命名规则。
+                    滚动策略依赖于 filePattern 中配置的最具体的时间单位，根据最具体的时间单位进行滚动。
+
+                    注意：modulate属性是指从启动时间开始算5秒，还是从0秒开始算5秒，运行一下就明白了。
+                    modulate: true(默认值) // 会从启动时间开始算 5秒
+                    modulate: false // 从 0秒开始算
+                -->
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <!-- 按大小划分 -->
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <!-- 限制每天文件个数
+                 设置压缩 level，0-9，其中 0 = none，1 =最佳速度，通过 9 =最佳压缩。仅适用于 ZIP files。
+            -->
+            <DefaultRolloverStrategy compressionLevel="9" max="10">
+                <Delete basePath="${logPath}" maxDepth="2">
+                    <IfFileName glob="*/${displayName}-info-*.log.gz"/>
+                    <!-- 删除180天之前的日志 -->
+                    <IfLastModified age="180d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </MyRollingFile>
+
+        <MyRollingFile name="warnFile" fileName="${logPath}/${displayName}_warn.log"
+                       filePattern="${logPath}/${date:yyyy-MM}/${displayName}-warn-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${pattern}"/>
+            <Filters>
+                <ThresholdFilter level="WARN"/>
+                <ThresholdFilter level="ERROR" onMatch="DENY" onMismatch="NEUTRAL"/>
+            </Filters>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy compressionLevel="9" max="10">
+                <Delete basePath="${logPath}" maxDepth="2">
+                    <IfFileName glob="*/${displayName}-warn-*.log.gz"/>
+                    <!-- 删除180天之前的日志 -->
+                    <IfLastModified age="180d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </MyRollingFile>
+
+        <MyRollingFile name="errorFile" fileName="${logPath}/${displayName}_error.log"
+                       filePattern="${logPath}/${date:yyyy-MM}/${displayName}-error-%d{yyyy-MM-dd}-%i.log.gz">
+            <PatternLayout pattern="${pattern}"/>
+            <ThresholdFilter level="ERROR"/>
+            <Policies>
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+                <SizeBasedTriggeringPolicy size="100 MB"/>
+            </Policies>
+            <DefaultRolloverStrategy compressionLevel="9" max="10">
+                <Delete basePath="${logPath}" maxDepth="2">
+                    <IfFileName glob="*/${displayName}-error-*.log.gz"/>
+                    <!-- 删除180天之前的日志 -->
+                    <IfLastModified age="180d"/>
+                </Delete>
+            </DefaultRolloverStrategy>
+        </MyRollingFile>
+    </Appenders>
+
+    <Loggers>
+        <!--过滤掉spring一些无用的DEBUG信息 -->
+        <Logger name="org.springframework" level="INFO"/>
+        <Root level="INFO">
+            <AppenderRef ref="console"/>
+            <AppenderRef ref="infoFile"/>
+            <AppenderRef ref="warnFile"/>
+            <AppenderRef ref="errorFile"/>
+        </Root>
+    </Loggers>
+
+</configuration>

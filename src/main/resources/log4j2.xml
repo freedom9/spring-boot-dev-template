@@ -17,7 +17,7 @@
         </Console>
 
         <MyRollingFile name="infoFile" fileName="${logPath}/${displayName}_info.log"
-                       filePattern="${logPath}/${date:yyyy-MM}/${displayName}-info-%d{yyyy-MM-dd}-%i.log.gz"
+                       filePattern="${logPath}/$${date:yyyy-MM}/${displayName}-info-%d{yyyy-MM-dd}-%i.log.gz"
                        bufferedIO="true" bufferSize="8192" immediateFlush="false">
             <PatternLayout pattern="${pattern}"/>
             <Filters>
@@ -53,7 +53,7 @@
         </MyRollingFile>
 
         <MyRollingFile name="warnFile" fileName="${logPath}/${displayName}_warn.log"
-                       filePattern="${logPath}/${date:yyyy-MM}/${displayName}-warn-%d{yyyy-MM-dd}-%i.log.gz">
+                       filePattern="${logPath}/$${date:yyyy-MM}/${displayName}-warn-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="${pattern}"/>
             <Filters>
                 <ThresholdFilter level="WARN"/>
@@ -73,7 +73,7 @@
         </MyRollingFile>
 
         <MyRollingFile name="errorFile" fileName="${logPath}/${displayName}_error.log"
-                       filePattern="${logPath}/${date:yyyy-MM}/${displayName}-error-%d{yyyy-MM-dd}-%i.log.gz">
+                       filePattern="${logPath}/$${date:yyyy-MM}/${displayName}-error-%d{yyyy-MM-dd}-%i.log.gz">
             <PatternLayout pattern="${pattern}"/>
             <ThresholdFilter level="ERROR"/>
             <Policies>

@@ -4,8 +4,8 @@
 ### 技术栈
 - 核心框架：Spring Boot 2.3.4
 - 持久层框架：MyBatis Plus 3.4.0
-- 日志框架：log4j2
-- 在线文档：knife4j
+- 日志框架：Log4j2
+- 在线文档：Knife4j
 
 ### 项目结构
 #### 整体结构图

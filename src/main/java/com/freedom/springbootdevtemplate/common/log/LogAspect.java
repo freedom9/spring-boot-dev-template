@@ -6,12 +6,12 @@ import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.CodeSignature;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -34,25 +34,24 @@ public class LogAspect {
     @Pointcut("execution(public * com.freedom.springbootdevtemplate.controller..*.*(..))")
     public void webLog() {}
 
-    @Before("webLog()")
-    public void deBefore(JoinPoint joinPoint) {
-        // 接收到请求，记录请求内容
-        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-        HttpServletRequest request = attributes.getRequest();
-        // 记录下请求内容
-        log.info("URL         : {}", request.getRequestURL().toString());
-        log.info("Http Method : {}", request.getMethod());
-        log.info("IP          : {}", request.getRemoteAddr());
-        log.info("Request Args: {}", getRequestParam(joinPoint));
-    }
-
     @Around("webLog()")
     public Object doAround(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         long startTime = System.currentTimeMillis();
+        // 接收到请求，记录请求内容
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        HttpServletRequest request = attributes.getRequest();
+
         Object result = proceedingJoinPoint.proceed();
-        // 打印出参
-        log.info("Response Args : {}", result != null ? new Gson().toJson(result) : "");
-        log.info("Time-consuming: {}", System.currentTimeMillis() - startTime);
+
+        RequestInfo requestInfo = new RequestInfo();
+        requestInfo.setIp(request.getRemoteAddr());
+        requestInfo.setUrl(request.getRequestURL().toString());
+        requestInfo.setHttpMethod(request.getMethod());
+        requestInfo.setRequestParams(getRequestParam(proceedingJoinPoint));
+        requestInfo.setResult(result);
+        requestInfo.setTimeCost(System.currentTimeMillis() - startTime);
+        log.info("Request Info: {}", new Gson().toJson(requestInfo));
+
         return result;
     }
 
@@ -62,7 +61,7 @@ public class LogAspect {
      * @param joinPoint
      * @return
      */
-    private String getRequestParam(JoinPoint joinPoint) {
+    private Map<String, Object> getRequestParam(JoinPoint joinPoint) {
 
         // joinPoint获取参数名
         String[] params = ((CodeSignature) joinPoint.getStaticPart().getSignature()).getParameterNames();
@@ -73,14 +72,15 @@ public class LogAspect {
 
         int i = -1;
         for (Object arg : args) {
-            i++;
             if (arg instanceof HttpServletRequest || arg instanceof HttpServletResponse) {
                 continue;
             }
-            param.put(params[i], arg);
+            if (arg instanceof MultipartFile) {
+                arg = ((MultipartFile) arg).getOriginalFilename();
+            }
+            param.put(params[++i], arg);
         }
-
-        return new Gson().toJson(param);
+        return param;
     }
 
 }
